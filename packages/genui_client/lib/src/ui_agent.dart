@@ -74,14 +74,18 @@ class UiAgent {
     _addMessage(message);
     _isProcessing.value = true;
     try {
-      await for (final definition in _client.generateUI(
+      await for (final chatMessage in _client.generateUI(
         _sessionId!,
         _conversation.value,
       )) {
-        _genUiManager.addOrUpdateSurface(
-          definition.surfaceId,
-          definition.toMap(),
-        );
+        if (chatMessage is AiUiMessage) {
+          _genUiManager.addOrUpdateSurface(
+            chatMessage.surfaceId,
+            chatMessage.definition,
+          );
+        } else {
+          _addMessage(chatMessage);
+        }
       }
     } finally {
       _isProcessing.value = false;

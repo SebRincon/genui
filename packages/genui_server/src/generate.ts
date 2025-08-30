@@ -4,31 +4,7 @@ import { googleAI } from "@genkit-ai/googleai";
 import { cacheService, CacheFlowContext } from "./cache";
 import { logger } from "./logger";
 import { Message, Part } from "@genkit-ai/ai";
-
-const addOrUpdateSurfaceTool = ai.defineTool(
-  {
-    name: "addOrUpdateSurface",
-    description: "Add or update a UI surface.",
-    inputSchema: z.object({
-      surfaceId: z.string(),
-      definition: z.unknown(),
-    }),
-    outputSchema: z.void(),
-  },
-  async () => {}
-);
-
-const deleteSurfaceTool = ai.defineTool(
-  {
-    name: "deleteSurface",
-    description: "Delete a UI surface.",
-    inputSchema: z.object({
-      surfaceId: z.string(),
-    }),
-    outputSchema: z.void(),
-  },
-  async () => {}
-);
+import { jsonSchemaToZod } from "./schema_converter";
 
 export const generateUiFlow = ai.defineFlow(
   {
@@ -46,6 +22,34 @@ export const generateUiFlow = ai.defineFlow(
       throw new Error("Invalid session ID");
     }
     logger.debug("Successfully retrieved catalog from cache.");
+
+    // Dynamically build the tool schema from the session's catalog.
+    const definitionSchema = jsonSchemaToZod(catalog);
+
+    const addOrUpdateSurfaceTool = ai.defineTool(
+      {
+        name: "addOrUpdateSurface",
+        description: "Add or update a UI surface.",
+        inputSchema: z.object({
+          surfaceId: z.string().describe("The unique ID for the UI surface."),
+          definition: definitionSchema,
+        }),
+        outputSchema: z.object({ status: z.string() }),
+      },
+      async () => ({ status: "updated" })
+    );
+
+    const deleteSurfaceTool = ai.defineTool(
+      {
+        name: "deleteSurface",
+        description: "Delete a UI surface.",
+        inputSchema: z.object({
+          surfaceId: z.string(),
+        }),
+        outputSchema: z.object({ status: z.string() }),
+      },
+      async () => ({ status: "deleted" })
+    );
 
     // Transform conversation to Genkit's format
     const genkitConversation: Message[] = request.conversation.map(
@@ -104,9 +108,19 @@ export const generateUiFlow = ai.defineFlow(
 
       for await (const chunk of stream) {
         logger.debug({ chunk }, "Chunk from AI");
-        streamingCallback(chunk);
+        if (chunk.toolRequests) {
+          logger.info("Yielding tool request from AI.");
+          streamingCallback(chunk);
+        }
       }
-      return await response;
+
+      const finalResponse = await response;
+      if (finalResponse.text) {
+        logger.info("Yielding final text response from AI.");
+        streamingCallback({ text: finalResponse.text });
+      }
+
+      return finalResponse;
     } catch (error) {
       logger.error(error, "An error occurred during AI generation");
       throw error;

@@ -100,10 +100,12 @@ void main() {
       final definitions = await stream.toList();
 
       expect(definitions.length, 2);
-      expect(definitions[0].surfaceId, 'surface1');
-      expect(definitions[0].root, 'root1');
-      expect(definitions[1].surfaceId, 'surface2');
-      expect(definitions[1].root, 'root2');
+      final uiMessage1 = definitions[0] as AiUiMessage;
+      expect(uiMessage1.definition['surfaceId'], 'surface1');
+      expect(uiMessage1.definition['root'], 'root1');
+      final uiMessage2 = definitions[1] as AiUiMessage;
+      expect(uiMessage2.definition['surfaceId'], 'surface2');
+      expect(uiMessage2.definition['root'], 'root2');
     });
 
     test('generateUI fails', () async {

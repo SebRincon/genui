@@ -41,10 +41,10 @@ class GenUIClient {
 
   /// Generates a UI by sending the current conversation to the GenUI server.
   ///
-  /// This method returns a stream of [UiDefinition]s that represent the
-  /// generated UI. The server may send multiple UI definitions in response to a
-  /// single request.
-  Stream<UiDefinition> generateUI(
+  /// This method returns a stream of [ChatMessage]s. These can be either
+  /// [AiUiMessage]s containing UI definitions as they are generated, or a final
+  /// [AiTextMessage] from the model.
+  Stream<ChatMessage> generateUI(
     String sessionId,
     List<ChatMessage> conversation,
   ) async* {
@@ -60,15 +60,30 @@ class GenUIClient {
     if (response.statusCode == 200) {
       await for (final chunk in response.stream) {
         final decoded = utf8.decode(chunk);
-        final json = jsonDecode(decoded) as Map<String, Object?>;
-        if (json['type'] == 'toolRequest') {
-          final toolRequests = json['toolRequests'] as List<Object?>;
-          for (final toolRequest in toolRequests) {
-            final definition =
-                ((toolRequest as Map<String, Object?>)['input']
-                        as Map<String, Object?>)['definition']
-                    as Map<String, Object?>;
-            yield UiDefinition.fromMap(definition);
+        // Genkit streams can sometimes send multiple JSON objects
+        for (final line in decoded.split('\n').where((s) => s.isNotEmpty)) {
+          final json = jsonDecode(line) as Map<String, Object?>;
+
+          // Handle toolRequest chunks for UI updates
+          if (json['type'] == 'toolRequest') {
+            final toolRequests = json['toolRequests'] as List<Object?>;
+            for (final toolRequest in toolRequests) {
+              final toolMap = toolRequest as Map<String, Object?>;
+              final toolName = toolMap['name'] as String;
+              if (toolName == 'addOrUpdateSurface' ||
+                  toolName == 'deleteSurface') {
+                final definition =
+                    (toolMap['input'] as Map<String, Object?>)['definition']
+                        as Map<String, Object?>;
+                yield AiUiMessage(definition: definition);
+              }
+            }
+            // Handle final text chunks
+          } else if (json.containsKey('text')) {
+            final text = json['text'] as String;
+            if (text.isNotEmpty) {
+              yield AiTextMessage.text(text);
+            }
           }
         }
       }
