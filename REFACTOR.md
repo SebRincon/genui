@@ -45,11 +45,13 @@ The `pubspec.yaml` for the new example will be updated to:
 
 - Remove the `flutter_genui` and `firebase_core` dependencies.
 - Add a path dependency on the `genui_client` package:
+
   ```yaml
   dependencies:
     genui_client:
       path: ../
   ```
+
 - Add the `logging` package for log configuration.
 
 ### 3. Application Logic (`lib/main.dart`)
