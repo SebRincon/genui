@@ -73,3 +73,25 @@ This document outlines the step-by-step plan to refactor the GenUI client and se
 ### Initial State
 
 - The implementation plan has been created and is ready for review. No code changes have been made yet.
+
+### Phase 1
+
+- Completed all server-side refactoring tasks.
+- Removed session management, caching, and Firebase dependencies.
+- Updated schemas, flows, and tests to reflect the new stateless architecture.
+- Encountered and resolved several linting and testing issues.
+- The server is now fully stateless.
+
+### Phase 2
+
+- Completed all client-side refactoring tasks.
+- Removed session management from the client.
+- Updated `GenUIClient` and `UiAgent` to send the catalog with each request.
+- Updated tests to reflect the new stateless API.
+- The client is now fully stateless.
+
+### Phase 3
+
+- Updated the example application to remove the call to `startSession`.
+- Updated the client and server implementation documentation to reflect the new stateless architecture.
+- The refactor is now complete.
