@@ -117,6 +117,7 @@ class GenUiManager implements SurfaceBuilder {
   /// If a surface with the given ID does not exist, a new one is created.
   /// Otherwise, the existing surface is updated.
   void addOrUpdateSurface(String surfaceId, JsonMap definition) {
+    genUiLogger.info('Updating surface $surfaceId with definition $definition');
     final uiDefinition = UiDefinition.fromMap({
       'surfaceId': surfaceId,
       ...definition,

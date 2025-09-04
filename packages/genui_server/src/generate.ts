@@ -59,12 +59,14 @@ export const generateUiFlow = ai.defineFlow(
     // Create a dynamic system prompt that includes the schema. This instructs
     // the model on how to structure the 'definition' parameter for this call.
     const systemPrompt = `
-You are an expert UI generation agent.
+You are an expert UI generation agent. Your goal is to generate a UI based on the user's request.
 
 When you use the 'addOrUpdateSurface' tool, the 'definition' parameter you provide MUST be a JSON object that strictly conforms to the following JSON Schema:
 \`\`\`json
 ${catalogSchemaString}
 \`\`\`
+
+After you have successfully called the 'addOrUpdateSurface' tool and have received a 'toolResponse' with a status of 'updated', you should consider the user's request fulfilled. Respond with a short confirmation message to the user and then stop. Do not call the tool again unless the user asks for further changes.
 `.trim();
 
     // Transform conversation to Genkit's format

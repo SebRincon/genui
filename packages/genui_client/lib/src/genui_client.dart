@@ -20,11 +20,9 @@ class GenUIClient {
 
   @visibleForTesting
   GenUIClient.withClient(
-    http.Client client,
-    {
+    http.Client client, {
     String baseUrl = 'http://localhost:3400',
-  })
-    : _baseUrl = baseUrl,
+  }) : _baseUrl = baseUrl,
        _client = client;
 
   Future<String> startSession(Catalog catalog) async {
@@ -39,10 +37,7 @@ class GenUIClient {
     }
 
     final requestBody = jsonEncode({
-      'data': {
-        'protocolVersion': '0.1.0',
-        'catalog': catalogSchema,
-      },
+      'data': {'protocolVersion': '0.1.0', 'catalog': catalogSchema},
     }, toEncodable: toEncodable);
     genUiLogger.info('Request body: $requestBody');
     final response = await _client.post(
@@ -77,7 +72,10 @@ class GenUIClient {
     String sessionId,
     List<ChatMessage> conversation,
   ) async* {
-    final request = http.Request('POST', Uri.parse('$_baseUrl/generateUi'));
+    final request = http.Request(
+      'POST',
+      Uri.parse('$_baseUrl/generateUi?stream=true'),
+    );
     request.headers['Content-Type'] = 'application/json';
     request.body = jsonEncode({
       'data': {
@@ -92,28 +90,55 @@ class GenUIClient {
       await for (final chunk in response.stream) {
         final decoded = utf8.decode(chunk);
         // Genkit streams can sometimes send multiple JSON objects
-        for (final line in decoded.split('\n').where((s) => s.isNotEmpty)) {
+        for (var line in decoded.split('\n').where((s) => s.isNotEmpty)) {
+          genUiLogger.fine('Received chunk from server: $line');
+          if (line.startsWith('data: ')) {
+            line = line.substring(6);
+          }
           final json = jsonDecode(line) as Map<String, Object?>;
 
-          // Handle toolRequest chunks for UI updates
-          if (json['type'] == 'toolRequest') {
-            final toolRequests = json['toolRequests'] as List<Object?>;
-            for (final toolRequest in toolRequests) {
-              final toolMap = toolRequest as Map<String, Object?>;
-              final toolName = toolMap['name'] as String;
-              if (toolName == 'addOrUpdateSurface' ||
-                  toolName == 'deleteSurface') {
-                final definition =
-                    (toolMap['input'] as Map<String, Object?>)['definition']
-                        as Map<String, Object?>;
-                yield AiUiMessage(definition: definition);
+          final isFinal = json.containsKey('result');
+          final message = isFinal
+              ? (json['result'] as Map<String, Object?>)['message']
+                    as Map<String, Object?>?
+              : json['message'] as Map<String, Object?>?;
+
+          if (message == null) continue;
+
+          if (message.containsKey('content')) {
+            final content = message['content'] as List<Object?>;
+
+            if (isFinal) {
+              // It's the final message, aggregate text parts.
+              final text = content
+                  .whereType<Map<String, Object?>>()
+                  .where((part) => part.containsKey('text'))
+                  .map((part) => part['text'] as String)
+                  .join('');
+              if (text.isNotEmpty) {
+                yield AiTextMessage.text(text);
               }
-            }
-            // Handle final text chunks
-          } else if (json.containsKey('text')) {
-            final text = json['text'] as String;
-            if (text.isNotEmpty) {
-              yield AiTextMessage.text(text);
+            } else {
+              // It's a streaming chunk, only process tool requests.
+              for (final part in content) {
+                final partMap = part as Map<String, Object?>;
+                if (partMap.containsKey('toolRequest')) {
+                  final toolRequest =
+                      partMap['toolRequest'] as Map<String, Object?>;
+                  final toolName = toolRequest['name'] as String;
+                  if (toolName == 'addOrUpdateSurface') {
+                    final input = toolRequest['input'] as Map<String, Object?>;
+                    final definition =
+                        input['definition'] as Map<String, Object?>;
+                    final surfaceId = input['surfaceId'] as String;
+                    yield AiUiMessage(
+                      definition: definition,
+                      surfaceId: surfaceId,
+                    );
+                  }
+                  // TODO: Handle deleteSurface
+                }
+              }
             }
           }
         }

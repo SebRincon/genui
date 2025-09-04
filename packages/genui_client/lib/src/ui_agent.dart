@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
 import 'genui_client.dart';
@@ -81,6 +82,13 @@ class UiAgent {
             chatMessage.surfaceId,
             chatMessage.definition,
           );
+          // Check if a UI message for this surface already exists.
+          final existingUiMessage = _conversation.value
+              .whereType<AiUiMessage>()
+              .firstWhereOrNull((m) => m.surfaceId == chatMessage.surfaceId);
+          if (existingUiMessage == null) {
+            _addMessage(chatMessage);
+          }
         } else {
           _addMessage(chatMessage);
         }

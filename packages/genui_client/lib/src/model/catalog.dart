@@ -81,7 +81,7 @@ class Catalog {
         ),
     ];
 
-    return S.object(
+    final widgetSchema = S.object(
       description:
           'Represents a *single* widget in a UI widget tree. '
           'This widget could be one of many supported types.',
@@ -100,6 +100,22 @@ class Catalog {
         ),
       },
       required: ['id', 'widget'],
+    );
+
+    return S.object(
+      description: 'The definition of a UI surface to be rendered.',
+      properties: {
+        'root': S.string(
+          description:
+              'The ID of the root widget in the UI tree. This widget and its '
+              'children will be rendered on the surface.',
+        ),
+        'widgets': S.list(
+          description:
+              'A list of all the widget definitions for this UI surface.',
+          items: widgetSchema,
+        ),
+      },
     );
   }
 }
