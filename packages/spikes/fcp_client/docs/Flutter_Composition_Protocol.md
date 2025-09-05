@@ -265,12 +265,71 @@ When a user triggers an event, the client sends an `EventPayload` to the server.
 
 ### **5.2. Server-to-Client: The `StateUpdate` Payload**
 
-To change only dynamic data, the server sends a `StateUpdate` payload using the **JSON Patch standard (RFC 6902)**.
+To change only dynamic data, the server sends a `StateUpdate` payload. This payload uses a hybrid model of operations designed to be both powerful for granular updates and simple for Large Language Models (LLMs) to generate, avoiding the brittleness of index-based list modifications.
 
-- `patches`: An array of JSON Patch operation objects. For example, to change a user's name to "Bob", the array would contain:
+The payload contains a single `operations` array, where each object is a specific command.
+
+#### **5.2.1. The `patch` Operation**
+
+This operation performs a single, targeted modification using a pathing system that relies on unique item IDs instead of array indices.
+
+- `op`: `"patch"`
+- `patch`: A JSON Patch-like object: `{ "op": "replace" | "add" | "remove", "path": "...", "value": ... }`.
+- **Path Syntax**: The `path` string uses a special syntax for lists: `/listName/key:value/propertyName`. For example, to target the `price` of a product with `sku` "abc-123", the path would be `/products/sku:abc-123/price`.
 
 ```json
-[{ "op": "replace", "path": "/user/name", "value": "Bob" }]
+{
+  "op": "patch",
+  "patch": {
+    "op": "replace",
+    "path": "/products/sku:abc-123/price",
+    "value": 35.99
+  }
+}
+```
+
+#### **5.2.2. High-Level List Operations**
+
+These commands provide simple, semantic shortcuts for common list manipulations.
+
+- **`listAppend`**: Appends one or more items to the end of a list.
+  - `path`: Path to the target list.
+  - `items`: An array of full item objects to add.
+
+```json
+{
+  "op": "listAppend",
+  "path": "/products",
+  "items": [{ "sku": "xyz-789", "name": "New Gadget", "price": 10.0 }]
+}
+```
+
+- **`listRemove`**: Removes items from a list based on their unique keys.
+  - `path`: Path to the target list.
+  - `itemKey`: The name of the unique ID property (e.g., `"sku"`).
+  - `keys`: An array of key values to remove.
+
+```json
+{
+  "op": "listRemove",
+  "path": "/products",
+  "itemKey": "sku",
+  "keys": ["def-456"]
+}
+```
+
+- **`listUpdate`**: Replaces entire items in-place, finding them by their unique key.
+  - `path`: Path to the target list.
+  - `itemKey`: The name of the unique ID property.
+  - `items`: An array of full item objects that will replace their existing counterparts.
+
+```json
+{
+  "op": "listUpdate",
+  "path": "/products",
+  "itemKey": "sku",
+  "items": [{ "sku": "abc-123", "name": "Updated Gadget", "price": 35.99 }]
+}
 ```
 
 ### **5.3. Server-to-Client: The `LayoutUpdate` Payload**
@@ -300,7 +359,8 @@ This schema defines the objects that are actively exchanged between the client a
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for this widget instance."
+          "description": "Unique identifier for this widget instance. Must contain only alphanumeric characters, hyphens, and underscores.",
+          "pattern": "^[a-zA-Z0-9_-]+$"
         },
         "type": {
           "type": "string",
@@ -361,23 +421,81 @@ This schema defines the objects that are actively exchanged between the client a
     "StateUpdate": {
       "type": "object",
       "properties": {
-        "patches": {
+        "operations": {
           "type": "array",
+          "description": "A series of operations to apply to the state.",
           "items": {
-            "type": "object",
-            "properties": {
-              "op": {
-                "type": "string",
-                "enum": ["add", "remove", "replace", "move", "copy", "test"]
+            "oneOf": [
+              {
+                "type": "object",
+                "title": "Patch Operation",
+                "properties": {
+                  "op": { "const": "patch" },
+                  "patch": {
+                    "type": "object",
+                    "properties": {
+                      "op": { "enum": ["add", "remove", "replace"] },
+                      "path": {
+                        "type": "string",
+                        "description": "A path to a value in the state. For lists, use 'key:value' to select an item (e.g., /products/sku:abc-123/price).",
+                        "pattern": "^(/([a-zA-Z0-9_-]+:[^/]+|[a-zA-Z0-9_-]+))+$"
+                      },
+                      "value": {}
+                    },
+                    "required": ["op", "path"]
+                  }
+                },
+                "required": ["op", "patch"]
               },
-              "path": { "type": "string" },
-              "value": {}
-            },
-            "required": ["op", "path"]
+              {
+                "type": "object",
+                "title": "List Append Operation",
+                "properties": {
+                  "op": { "const": "listAppend" },
+                  "path": {
+                    "type": "string",
+                    "description": "A path to a list in the state.",
+                    "pattern": "^(/([a-zA-Z0-9_-]+:[^/]+|[a-zA-Z0-9_-]+))+$"
+                  },
+                  "items": { "type": "array" }
+                },
+                "required": ["op", "path", "items"]
+              },
+              {
+                "type": "object",
+                "title": "List Remove Operation",
+                "properties": {
+                  "op": { "const": "listRemove" },
+                  "path": {
+                    "type": "string",
+                    "description": "A path to a list in the state.",
+                    "pattern": "^(/([a-zA-Z0-9_-]+:[^/]+|[a-zA-Z0-9_-]+))+$"
+                  },
+                  "itemKey": { "type": "string" },
+                  "keys": { "type": "array", "items": { "type": "string" } }
+                },
+                "required": ["op", "path", "itemKey", "keys"]
+              },
+              {
+                "type": "object",
+                "title": "List Update Operation",
+                "properties": {
+                  "op": { "const": "listUpdate" },
+                  "path": {
+                    "type": "string",
+                    "description": "A path to a list in the state.",
+                    "pattern": "^(/([a-zA-Z0-9_-]+:[^/]+|[a-zA-Z0-9_-]+))+$"
+                  },
+                  "itemKey": { "type": "string" },
+                  "items": { "type": "array" }
+                },
+                "required": ["op", "path", "itemKey", "items"]
+              }
+            ]
           }
         }
       },
-      "required": ["patches"]
+      "required": ["operations"]
     },
     "LayoutUpdate": {
       "type": "object",
