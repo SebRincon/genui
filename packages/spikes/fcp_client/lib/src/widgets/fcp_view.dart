@@ -261,6 +261,8 @@ class _LayoutEngine with ChangeNotifier {
     // ones.
     final Map<String, Object?> resolvedProperties = <String, Object?>{...?node.properties, ...boundProperties};
 
+    _resolveInlineBindings(resolvedProperties);
+
     final List<String> requiredProperties = itemDef.properties.required ?? <String>[];
     for (final String propName in requiredProperties) {
       if (!resolvedProperties.containsKey(propName)) {
@@ -360,6 +362,8 @@ class _LayoutEngine with ChangeNotifier {
       ...boundProperties,
     };
 
+    _resolveInlineBindings(resolvedProperties, scopedData: itemData);
+
     // Recursively build children.
     final Map<String, List<Widget>> builtChildren = <String, List<Widget>>{};
     for (final MapEntry<String, Object?> entry in resolvedProperties.entries) {
@@ -382,6 +386,39 @@ class _LayoutEngine with ChangeNotifier {
     }
 
     return builder(context, templateNode, resolvedProperties, builtChildren);
+  }
+
+  void _resolveInlineBindings(
+    Map<String, Object?> properties, {
+    Map<String, Object?>? scopedData,
+  }) {
+    for (final MapEntry<String, Object?> entry in properties.entries) {
+      if (entry.value is! String) {
+        continue;
+      }
+      String value = entry.value as String;
+      final RegExp regex = RegExp(r'\$\{(.*?)\}');
+      final Iterable<RegExpMatch> matches = regex.allMatches(value);
+      if (matches.isEmpty) {
+        continue;
+      }
+      for (final RegExpMatch match in matches) {
+        final String path = match.group(1)!;
+        Object? resolvedValue;
+        if (path.startsWith('item.') && scopedData != null) {
+          resolvedValue = bindingProcessor.getValueFromMap(
+            path.substring(5),
+            scopedData,
+          );
+        } else {
+          resolvedValue = bindingProcessor.state.getValue(path);
+        }
+        if (resolvedValue != null) {
+          value = value.replaceAll(match.group(0)!, resolvedValue.toString());
+        }
+      }
+      properties[entry.key] = value;
+    }
   }
 }
 

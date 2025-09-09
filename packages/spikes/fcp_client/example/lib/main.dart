@@ -97,6 +97,48 @@ class _FcpViewerHomePageState extends State<FcpViewerHomePage> {
     }
   }
 
+  void _useSampleState() {
+    final sampleState = {
+      'operations': [
+        {
+          'op': 'patch',
+          'patch': {'op': 'add', 'path': '/greeting', 'value': 'Hello'}
+        },
+        {
+          'op': 'patch',
+          'patch': {
+            'op': 'add',
+            'path': '/user',
+            'value': {'name': 'World'}
+          }
+        }
+      ]
+    };
+    _stateUpdateController.text =
+        const JsonEncoder.withIndent('  ').convert(sampleState);
+  }
+
+  void _useSampleLayout() {
+    final sampleLayout = {
+      'operations': [
+        {
+          'op': 'add',
+          'nodes': [
+            {
+              'id': 'greeting_text',
+              'type': 'Text',
+              'properties': {'data': r'${greeting}, ${user.name}!'}
+            }
+          ],
+          'targetNodeId': 'root',
+          'targetProperty': 'children',
+        }
+      ]
+    };
+    _layoutUpdateController.text =
+        const JsonEncoder.withIndent('  ').convert(sampleLayout);
+  }
+
   @override
   Widget build(BuildContext context) {
     final registry = createRegistry();
@@ -117,9 +159,19 @@ class _FcpViewerHomePageState extends State<FcpViewerHomePage> {
               ),
             ),
             const SizedBox(height: 8.0),
-            ElevatedButton(
-              onPressed: _applyStateUpdate,
-              child: const Text('Apply State Update'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _useSampleState,
+                  child: const Text('Use Sample'),
+                ),
+                const SizedBox(width: 8.0),
+                ElevatedButton(
+                  onPressed: _applyStateUpdate,
+                  child: const Text('Apply State Update'),
+                ),
+              ],
             ),
             const SizedBox(height: 16.0),
             TextField(
@@ -131,9 +183,19 @@ class _FcpViewerHomePageState extends State<FcpViewerHomePage> {
               ),
             ),
             const SizedBox(height: 8.0),
-            ElevatedButton(
-              onPressed: _applyLayoutUpdate,
-              child: const Text('Apply Layout Update'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _useSampleLayout,
+                  child: const Text('Use Sample'),
+                ),
+                const SizedBox(width: 8.0),
+                ElevatedButton(
+                  onPressed: _applyLayoutUpdate,
+                  child: const Text('Apply Layout Update'),
+                ),
+              ],
             ),
             const SizedBox(height: 16.0),
             if (_error != null)

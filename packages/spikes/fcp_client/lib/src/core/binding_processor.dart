@@ -15,13 +15,13 @@ import 'fcp_state.dart';
 /// `condition`, `map`).
 class BindingProcessor {
   /// Creates a binding processor that resolves values against the given state.
-  BindingProcessor(this._state);
+  BindingProcessor(this.state);
 
-  final FcpState _state;
+  final FcpState state;
 
   /// Resolves all bindings for a given layout node against the main state.
   Map<String, Object?> process(LayoutNode node) {
-    final WidgetDefinition? itemDefJson = _state.catalog.items[node.type];
+    final WidgetDefinition? itemDefJson = state.catalog.items[node.type];
     if (itemDefJson == null) {
       // It's valid for a widget to not have a definition, in which case
       // it has no properties that can be bound.
@@ -42,7 +42,7 @@ class BindingProcessor {
     LayoutNode node,
     Map<String, Object?> scopedData,
   ) {
-    final WidgetDefinition? itemDefJson = _state.catalog.items[node.type];
+    final WidgetDefinition? itemDefJson = state.catalog.items[node.type];
     if (itemDefJson == null) {
       // It's valid for a widget to not have a definition, in which case
       // it has no properties that can be bound.
@@ -88,10 +88,10 @@ class BindingProcessor {
     if (binding.path.startsWith('item.')) {
       // Scoped path, resolve against the item data.
       final String path = binding.path.substring(5);
-      rawValue = _getValueFromMap(path, scopedData);
+      rawValue = getValueFromMap(path, scopedData);
     } else {
       // Global path, resolve against the main state.
-      rawValue = _state.getValue(binding.path);
+      rawValue = state.getValue(binding.path);
     }
 
     if (rawValue == null) {
@@ -108,7 +108,7 @@ class BindingProcessor {
     return _applyTransformation(rawValue, binding);
   }
 
-  Object? _getValueFromMap(String path, Map<String, Object?>? map) {
+  Object? getValueFromMap(String path, Map<String, Object?>? map) {
     if (map == null) return null;
     final List<String> parts = path.split('.');
     Object? currentValue = map;
