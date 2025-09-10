@@ -4,7 +4,6 @@
 
 import 'dart:ui';
 
-import 'package:fcp_client/fcp_client.dart';
 import 'package:flutter/material.dart';
 
 class TravelCarousel extends StatelessWidget {
@@ -78,14 +77,15 @@ class _TravelCarouselItemState extends State<_TravelCarouselItem> {
         });
       },
       onTap: () {
-        FcpProvider.of(context)?.onEvent?.call(
-          Event(
-            sourceNodeId: 'travel_carousel',
-            eventName: 'itemSelected',
-            timestamp: DateTime.now(),
-            arguments: {'value': widget.data.title},
-          ),
-        );
+        // TODO(gspencer): Construct a ClientRequest object here.
+        // FcpProvider.of(context)?.onEvent?.call(
+        //   Event(
+        //     sourceNodeId: 'travel_carousel',
+        //     eventName: 'itemSelected',
+        //     timestamp: DateTime.now(),
+        //     arguments: {'value': widget.data.title},
+        //   ),
+        // );
       },
       child: SizedBox(
         width: 190,

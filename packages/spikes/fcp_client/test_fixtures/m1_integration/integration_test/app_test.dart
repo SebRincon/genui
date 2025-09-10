@@ -12,7 +12,7 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('FcpClient Integration Tests', () {
+  group('GenUiClient Integration Tests', () {
     // TODO(gspencer): Add integration tests for the new streaming client.
   });
 }

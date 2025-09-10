@@ -5,7 +5,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('ListViewBuilder', () {
-    // TODO(gspencer): Add tests for the new ListViewBuilder widget.
+  group('GenUiView ListViewBuilder', () {
+    // TODO(gspencer): Add tests for the new GenUiView widget with
+    // ListViewBuilder.
   });
 }

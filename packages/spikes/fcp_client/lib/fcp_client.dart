@@ -18,4 +18,4 @@ export 'src/core/widget_catalog_registry.dart';
 export 'src/models/models.dart';
 export 'src/models/streaming_models.dart';
 export 'src/widgets/fcp_provider.dart';
-export 'src/widgets/fcp_view.dart';
+export 'src/widgets/genui_view.dart';

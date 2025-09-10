@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:fcp_client/fcp_client.dart';
 import 'package:flutter/material.dart';
 
 class OptionsFilterChip extends StatefulWidget {
@@ -58,15 +57,15 @@ class _OptionsFilterChipState extends State<OptionsFilterChip> {
                           setState(() {
                             _currentChipLabel = newValue;
                           });
-                          FcpProvider.of(context)?.onEvent?.call(
-                            Event(
-                              sourceNodeId: 'options_filter_chip',
-                              eventName: 'optionSelected',
-                              timestamp: DateTime.now(),
-                              arguments: {'value': newValue},
-                            ),
-                          );
-                          Navigator.pop(context);
+                          // TODO(gspencer): Construct a ClientRequest object here.
+                          // FcpProvider.of(context)?.onEvent?.call(
+                          //       Event(
+                          //         sourceNodeId: 'options_filter_chip',
+                          //         eventName: 'optionSelected',
+                          //         timestamp: DateTime.now(),
+                          //         arguments: {'value': newValue},
+                          //       ),
+                          //     );                          Navigator.pop(context);
                         }
                       },
                     );

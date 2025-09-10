@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:fcp_client/fcp_client.dart';
 import 'package:flutter/material.dart';
 
 class FilterChipGroup extends StatelessWidget {
@@ -27,13 +26,16 @@ class FilterChipGroup extends StatelessWidget {
             Wrap(runSpacing: 16.0, spacing: 8.0, children: children),
             const SizedBox(height: 16.0),
             ElevatedButton(
-              onPressed: () => FcpProvider.of(context)?.onEvent?.call(
-                Event(
-                  sourceNodeId: 'filter_chip_group',
-                  eventName: 'submit',
-                  timestamp: DateTime.now(),
-                ),
-              ),
+              onPressed: () {
+                // TODO(gspencer): Construct a ClientRequest object here.
+                // FcpProvider.of(context)?.onEvent?.call(
+                //   Event(
+                //     sourceNodeId: 'filter_chip_group',
+                //     eventName: 'submit',
+                //     timestamp: DateTime.now(),
+                //   ),
+                // );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,

@@ -19,16 +19,16 @@ class FcpElevatedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final onEvent = FcpProvider.of(context)?.onEvent;
     return ElevatedButton(
       onPressed: () {
-        onEvent?.call(
-          Event(
-            sourceNodeId: node.id,
-            eventName: 'onPressed',
-            timestamp: DateTime.now(),
-          ),
-        );
+        // TODO(gspencer): Construct a ClientRequest object here.
+        // onEvent?.call(
+        //   Event(
+        //     sourceNodeId: node.id,
+        //     eventName: 'onPressed',
+        //     timestamp: DateTime.now(),
+        //   ),
+        // );
       },
       child: child,
     );
