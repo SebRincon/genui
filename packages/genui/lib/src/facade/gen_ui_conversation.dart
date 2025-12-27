@@ -147,9 +147,7 @@ class GenUiConversation {
   /// Sends a user message to the AI to generate a UI response.
   Future<void> sendRequest(ChatMessage message) async {
     final List<ChatMessage> history = _conversation.value;
-    if (message is! UserUiInteractionMessage) {
-      _conversation.value = [...history, message];
-    }
+    _conversation.value = [...history, message];
     final clientCapabilities = A2UiClientCapabilities(
       supportedCatalogIds: a2uiMessageProcessor.catalogs
           .map((c) => c.catalogId)
@@ -165,7 +163,15 @@ class GenUiConversation {
   }
 
   void _handleTextResponse(String text) {
-    _conversation.value = [..._conversation.value, AiTextMessage.text(text)];
+    final current = _conversation.value;
+    final processing = contentGenerator.isProcessing.value;
+    if (processing && current.isNotEmpty && current.last is AiTextMessage) {
+      final updated = List<ChatMessage>.from(current);
+      updated[updated.length - 1] = AiTextMessage.text(text);
+      _conversation.value = updated;
+    } else {
+      _conversation.value = [...current, AiTextMessage.text(text)];
+    }
     onTextResponse?.call(text);
   }
 
